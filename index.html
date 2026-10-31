@@ -1,0 +1,1214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Paper Signature Extractor - Extract Transparent Signatures & Seals Offline</title>
+  <meta name="description" content="Free open-source client-side tool to extract clean, transparent PNG signatures and notary stamps from paper photos. 100% private, zero server upload.">
+  <meta name="keywords" content="signature extractor, transparent signature, remove paper background, extract signature from photo, electronic signature maker, notary seal extractor">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="Paper Signature Extractor - Free & Open Source">
+  <meta property="og:description" content="Turn paper signatures and wax/ink stamps into transparent PNGs directly in your browser. 100% client-side privacy.">
+  <meta property="og:type" content="website">
+
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --primary-light: #eff6ff;
+      --surface: #ffffff;
+      --bg: #f8fafc;
+      --border: #e2e8f0;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --radius: 12px;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+      --shadow-md: 0 6px 18px rgba(15,23,42,0.08);
+      --shadow-lg: 0 16px 36px rgba(15,23,42,0.12);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Header */
+    header {
+      background: #ffffff;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      box-shadow: var(--shadow-sm);
+    }
+    .header-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0.85rem 1.25rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: var(--text-main);
+    }
+    .brand-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 9px;
+      background: linear-gradient(135deg, #2563eb, #3b82f6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      box-shadow: 0 4px 10px rgba(37,99,235,0.25);
+    }
+    .brand-title {
+      font-size: 1.15rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+    .brand-badge {
+      font-size: 0.72rem;
+      background: #ecfdf5;
+      color: #059669;
+      font-weight: 700;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      border: 1px solid #a7f3d0;
+      margin-left: 0.25rem;
+    }
+    .header-nav {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .nav-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      padding: 0.5rem 0.9rem;
+      border-radius: 8px;
+      text-decoration: none;
+      transition: all 0.15s ease;
+    }
+    .nav-btn-secondary {
+      background: #f1f5f9;
+      color: #334155;
+      border: 1px solid #cbd5e1;
+    }
+    .nav-btn-secondary:hover {
+      background: #e2e8f0;
+      color: #0f172a;
+    }
+    .nav-btn-dopic {
+      background: linear-gradient(135deg, #0ea5e9, #2563eb);
+      color: white;
+      box-shadow: 0 3px 8px rgba(37,99,235,0.25);
+      border: 1px solid transparent;
+    }
+    .nav-btn-dopic:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 14px rgba(37,99,235,0.35);
+    }
+
+    /* Container */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 1.5rem 1.25rem;
+      flex: 1;
+      width: 100%;
+    }
+
+    /* Hero Notice */
+    .privacy-callout {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: var(--radius);
+      padding: 0.75rem 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .privacy-text {
+      font-size: 0.88rem;
+      color: #1e40af;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    /* Dropzone View */
+    .dropzone-card {
+      background: white;
+      border: 2px dashed #cbd5e1;
+      border-radius: 16px;
+      padding: 3.5rem 1.5rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: var(--shadow-sm);
+    }
+    .dropzone-card:hover, .dropzone-card.dragover {
+      border-color: var(--primary);
+      background: #f8faff;
+      box-shadow: var(--shadow-md);
+      transform: scale(1.005);
+    }
+    .upload-icon-circle {
+      width: 68px;
+      height: 68px;
+      border-radius: 50%;
+      background: #eff6ff;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1.25rem auto;
+    }
+    .drop-title {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 0.4rem;
+    }
+    .drop-desc {
+      font-size: 0.92rem;
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+    }
+    .btn-upload {
+      background: var(--primary);
+      color: white;
+      border: none;
+      font-weight: 600;
+      font-size: 0.95rem;
+      padding: 0.75rem 1.8rem;
+      border-radius: 10px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      box-shadow: 0 4px 12px rgba(37,99,235,0.25);
+      transition: all 0.15s;
+    }
+    .btn-upload:hover {
+      background: var(--primary-hover);
+      transform: translateY(-1px);
+    }
+    .demo-selector {
+      margin-top: 1.75rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid #f1f5f9;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+    .demo-label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #64748b;
+    }
+    .btn-demo-pill {
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      padding: 0.35rem 0.85rem;
+      border-radius: 999px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #334155;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-demo-pill:hover {
+      background: #e2e8f0;
+      color: #0f172a;
+    }
+
+    /* Workspace */
+    .workspace-layout {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 1.5rem;
+      align-items: start;
+    }
+    @media (max-width: 960px) {
+      .workspace-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Canvas Preview Stage */
+    .stage-card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .stage-header {
+      padding: 0.85rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      background: #fafbfc;
+    }
+    .stage-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .dim-tag {
+      font-size: 0.75rem;
+      background: #e2e8f0;
+      color: #475569;
+      padding: 0.15rem 0.45rem;
+      border-radius: 6px;
+      font-weight: 600;
+    }
+    .stage-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .btn-action-tool {
+      background: white;
+      border: 1px solid var(--border);
+      color: #334155;
+      padding: 0.35rem 0.65rem;
+      border-radius: 7px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      transition: all 0.15s;
+    }
+    .btn-action-tool:hover {
+      background: #f1f5f9;
+      color: #0f172a;
+    }
+    .btn-action-tool.active {
+      background: #dbeafe;
+      border-color: #93c5fd;
+      color: #1d4ed8;
+    }
+
+    /* Preview Board */
+    .preview-board {
+      min-height: 440px;
+      max-height: 600px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: auto;
+      padding: 2rem;
+      position: relative;
+      user-select: none;
+      /* Checkerboard default */
+      background-color: #f8fafc;
+      background-image: 
+        linear-gradient(45deg, #e2e8f0 25%, transparent 25%), 
+        linear-gradient(-45deg, #e2e8f0 25%, transparent 25%), 
+        linear-gradient(45deg, transparent 75%, #e2e8f0 75%), 
+        linear-gradient(-45deg, transparent 75%, #e2e8f0 75%);
+      background-size: 20px 20px;
+      background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+    }
+    #signatureCanvas {
+      max-width: 100%;
+      max-height: 480px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+      border-radius: 6px;
+      transition: box-shadow 0.2s;
+    }
+    .eraser-cursor-ring {
+      position: absolute;
+      border: 2px solid #ef4444;
+      background: rgba(239,68,68,0.18);
+      border-radius: 50%;
+      pointer-events: none;
+      transform: translate(-50%, -50%);
+      display: none;
+      z-index: 10;
+    }
+
+    /* Sidebar Controls */
+    .controls-card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.25rem;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      gap: 1.35rem;
+    }
+    .control-group-title {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #475569;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.65rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .slider-row {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+    .slider-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #1e293b;
+    }
+    .slider-val {
+      color: var(--primary);
+      font-weight: 700;
+      font-size: 0.85rem;
+    }
+    input[type=range] {
+      width: 100%;
+      accent-color: var(--primary);
+      height: 6px;
+      border-radius: 3px;
+      background: #e2e8f0;
+      cursor: pointer;
+    }
+
+    /* Color Swatches */
+    .color-swatch-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 0.5rem;
+    }
+    .color-btn {
+      height: 38px;
+      border-radius: 8px;
+      border: 2px solid transparent;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+      position: relative;
+      transition: all 0.15s;
+    }
+    .color-btn:hover {
+      transform: scale(1.05);
+    }
+    .color-btn.active {
+      border-color: #0f172a;
+      box-shadow: 0 0 0 2px white inset;
+    }
+    .color-btn.active::after {
+      content: "✓";
+      color: white;
+      font-size: 0.9rem;
+      font-weight: 800;
+    }
+
+    /* Preview Background Modes */
+    .bg-modes {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.5rem;
+    }
+    .bg-mode-btn {
+      padding: 0.45rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: #f8fafc;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: #334155;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s;
+    }
+    .bg-mode-btn.active {
+      background: #e0f2fe;
+      border-color: #7dd3fc;
+      color: #0369a1;
+    }
+
+    /* Export Buttons */
+    .export-section {
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      padding-top: 0.5rem;
+      border-top: 1px solid var(--border);
+    }
+    .btn-download-primary {
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      color: white;
+      border: none;
+      padding: 0.85rem;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 0.95rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      box-shadow: 0 4px 12px rgba(37,99,235,0.25);
+      transition: all 0.15s;
+    }
+    .btn-download-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(37,99,235,0.35);
+    }
+    .btn-copy-secondary {
+      background: #f8fafc;
+      color: #0f172a;
+      border: 1px solid #cbd5e1;
+      padding: 0.65rem;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 0.88rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      transition: all 0.15s;
+    }
+    .btn-copy-secondary:hover {
+      background: #f1f5f9;
+    }
+
+    /* Footer */
+    footer {
+      background: white;
+      border-top: 1px solid var(--border);
+      padding: 2rem 1.25rem;
+      margin-top: 3rem;
+    }
+    .footer-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 1rem;
+    }
+    .footer-powered {
+      font-size: 0.92rem;
+      color: #334155;
+    }
+    .footer-powered a {
+      color: #2563eb;
+      font-weight: 700;
+      text-decoration: none;
+    }
+    .footer-powered a:hover {
+      text-decoration: underline;
+    }
+    .footer-links {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      font-size: 0.85rem;
+      color: #64748b;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .footer-links a {
+      color: #64748b;
+      text-decoration: none;
+    }
+    .footer-links a:hover {
+      color: #0f172a;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Sticky Navigation Bar -->
+  <header>
+    <div class="header-inner">
+      <a href="#" class="brand">
+        <div class="brand-icon">
+          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+          </svg>
+        </div>
+        <div>
+          <span class="brand-title">Paper Signature Extractor</span>
+          <span class="brand-badge">100% Client-Side</span>
+        </div>
+      </a>
+
+      <div class="header-nav">
+        <!-- Natural backlink to Dopic App (Official Tool Hub) -->
+        <a href="https://dopic.app" target="_blank" rel="noopener" class="nav-btn nav-btn-dopic" title="Explore more AI image and photo tools">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
+          </svg>
+          <span>More AI Tools on Dopic</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="container">
+
+    <!-- Privacy Callout Banner -->
+    <div class="privacy-callout">
+      <div class="privacy-text">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+        </svg>
+        <span><strong>100% In-Browser Privacy:</strong> Your signature or contract never leaves your computer. Processed entirely via HTML5 Canvas.</span>
+      </div>
+      <div>
+        <button type="button" class="btn-demo-pill" onclick="loadDemoSignature()">Try Demo Signature</button>
+        <button type="button" class="btn-demo-pill" onclick="loadDemoSeal()">Try Notary Stamp</button>
+      </div>
+    </div>
+
+    <!-- Hidden File Input -->
+    <input type="file" id="fileUpload" accept="image/*" style="display:none;">
+
+    <!-- 1. Dropzone (Initial State) -->
+    <section class="dropzone-card" id="dropzoneCard" onclick="triggerUpload()">
+      <div class="upload-icon-circle">
+        <svg width="34" height="34" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+        </svg>
+      </div>
+      <h2 class="drop-title">Drop your paper photo here, or click to upload</h2>
+      <p class="drop-desc">Supports handwritten contracts, receipts, blank paper signatures, and ink seals (PNG, JPG, WebP)</p>
+      <button type="button" class="btn-upload" onclick="event.stopPropagation(); triggerUpload();">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+        </svg>
+        Select Signature Photo
+      </button>
+
+      <div class="demo-selector" onclick="event.stopPropagation()">
+        <span class="demo-label">No photo handy? Try instant demo:</span>
+        <button type="button" class="btn-demo-pill" onclick="loadDemoSignature()">✍️ Handwritten Signature</button>
+        <button type="button" class="btn-demo-pill" onclick="loadDemoSeal()">🔴 Official Notary Seal</button>
+      </div>
+    </section>
+
+    <!-- 2. Workspace Layout (Hidden initially until image loaded) -->
+    <section class="workspace-layout" id="workspaceLayout" style="display:none;">
+      
+      <!-- Left: Interactive Canvas Stage -->
+      <div class="stage-card">
+        <div class="stage-header">
+          <div class="stage-title">
+            <span>Result Preview</span>
+            <span class="dim-tag" id="dimBadge">800 × 320 px</span>
+          </div>
+
+          <div class="stage-actions">
+            <button type="button" class="btn-action-tool" id="btnEraser" onclick="toggleEraser()" title="Manually erase unwanted lines or spots">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+              <span>Eraser</span>
+            </button>
+            <button type="button" class="btn-action-tool" id="btnUndo" onclick="undoEraser()" disabled title="Undo eraser action">
+              <span>Undo</span>
+            </button>
+            <button type="button" class="btn-action-tool" onclick="trimCanvas()" title="Trim empty transparent borders">
+              <span>Auto Trim</span>
+            </button>
+            <button type="button" class="btn-action-tool" onclick="rotateImage()" title="Rotate 90 degrees">
+              <span>Rotate</span>
+            </button>
+            <button type="button" class="btn-action-tool" onclick="triggerUpload()" title="Upload a new photo">
+              <span>New Photo</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Preview Board -->
+        <div class="preview-board" id="previewBoard">
+          <canvas id="signatureCanvas"></canvas>
+          <div class="eraser-cursor-ring" id="eraserRing"></div>
+        </div>
+      </div>
+
+      <!-- Right: Adjustment & Export Controls -->
+      <div class="controls-card">
+        
+        <!-- Background Removal Threshold -->
+        <div>
+          <div class="control-group-title">
+            <span>Clean Background</span>
+          </div>
+          <div class="slider-row">
+            <div class="slider-header">
+              <span>Paper Threshold</span>
+              <span class="slider-val" id="threshVal">152</span>
+            </div>
+            <input type="range" id="threshSlider" min="50" max="240" value="152" oninput="onThresholdChange(this.value)">
+            <p style="font-size:0.75rem; color:var(--text-muted); margin-top:2px;">Adjust to remove dark paper shadows without thinning the ink.</p>
+          </div>
+        </div>
+
+        <!-- Contrast / Smoothness -->
+        <div class="slider-row">
+          <div class="slider-header">
+            <span>Stroke Contrast</span>
+            <span class="slider-val" id="contrastVal">2.1</span>
+          </div>
+          <input type="range" id="contrastSlider" min="1.0" max="4.0" step="0.1" value="2.1" oninput="onContrastChange(this.value)">
+          <p style="font-size:0.75rem; color:var(--text-muted); margin-top:2px;">Enhances ink density and anti-aliasing edges.</p>
+        </div>
+
+        <!-- Ink Color Swatches -->
+        <div>
+          <div class="control-group-title">
+            <span>Change Ink Color</span>
+          </div>
+          <div class="color-swatch-grid">
+            <button type="button" class="color-btn active" style="background:#e2e8f0; color:#334155;" onclick="setInkColor('original', this)" title="Original Ink">Orig</button>
+            <button type="button" class="color-btn" style="background:#0f172a;" onclick="setInkColor('#0f172a', this)" title="Dark Black"></button>
+            <button type="button" class="color-btn" style="background:#1e40af;" onclick="setInkColor('#1e40af', this)" title="Royal Navy Blue"></button>
+            <button type="button" class="color-btn" style="background:#dc2626;" onclick="setInkColor('#dc2626', this)" title="Red Stamp / Seal"></button>
+            <button type="button" class="color-btn" style="background:#059669;" onclick="setInkColor('#059669', this)" title="Emerald Green"></button>
+          </div>
+        </div>
+
+        <!-- Preview Background Color Mode -->
+        <div>
+          <div class="control-group-title">
+            <span>Preview Mode</span>
+          </div>
+          <div class="bg-modes">
+            <button type="button" class="bg-mode-btn active" onclick="setBgMode('checker', this)">Transparency</button>
+            <button type="button" class="bg-mode-btn" onclick="setBgMode('#ffffff', this)">White Doc</button>
+            <button type="button" class="bg-mode-btn" onclick="setBgMode('#1e293b', this)">Dark Mode</button>
+          </div>
+        </div>
+
+        <!-- Export Actions -->
+        <div class="export-section">
+          <button type="button" class="btn-download-primary" onclick="downloadPNG()">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+            </svg>
+            Download Transparent PNG
+          </button>
+          <button type="button" class="btn-copy-secondary" onclick="copyToClipboard()">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/>
+            </svg>
+            Copy Image to Clipboard
+          </button>
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Footer with SEO Backlinks -->
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-powered">
+        Created & Powered by <a href="https://dopic.app" target="_blank" rel="noopener">Dopic.app</a> — Free Online AI Passport Photo Maker & Studio Tools.
+      </div>
+      <div class="footer-links">
+        <span>Open Source (MIT License)</span>
+        <span>•</span>
+        <span>Zero Server Uploads</span>
+        <span>•</span>
+        <a href="https://dopic.app" target="_blank" rel="noopener">Explore 30+ Free Tools on Dopic</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    /**
+     * Paper Signature Extractor
+     * 100% Client-Side Pure HTML5 Canvas
+     * Open Source under MIT License
+     */
+
+    let rawSourceCanvas = null;
+    let outputCanvas = null;
+    let outputCtx = null;
+    let currentInkColor = 'original';
+    let eraserActive = false;
+    let eraserSize = 28;
+    let eraserHistory = [];
+
+    document.addEventListener('DOMContentLoaded', () => {
+      outputCanvas = document.getElementById('signatureCanvas');
+      outputCtx = outputCanvas.getContext('2d');
+
+      const fileInput = document.getElementById('fileUpload');
+      fileInput.addEventListener('change', (e) => {
+        if (e.target.files && e.target.files[0]) {
+          loadFile(e.target.files[0]);
+        }
+      });
+
+      // Setup Drag & Drop
+      const dropzone = document.getElementById('dropzoneCard');
+      ['dragenter', 'dragover'].forEach(name => {
+        dropzone.addEventListener(name, (e) => { e.preventDefault(); dropzone.classList.add('dragover'); });
+      });
+      ['dragleave', 'drop'].forEach(name => {
+        dropzone.addEventListener(name, (e) => { e.preventDefault(); dropzone.classList.remove('dragover'); });
+      });
+      dropzone.addEventListener('drop', (e) => {
+        if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
+          loadFile(e.dataTransfer.files[0]);
+        }
+      });
+
+      initEraser();
+
+      // Load initial demo signature by default
+      loadDemoSignature();
+    });
+
+    function triggerUpload() {
+      const fileInput = document.getElementById('fileUpload');
+      fileInput.value = '';
+      fileInput.click();
+    }
+
+    function loadFile(file) {
+      if (!file.type.startsWith('image/')) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          setSourceImage(img);
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function setSourceImage(img) {
+      rawSourceCanvas = document.createElement('canvas');
+      rawSourceCanvas.width = img.width;
+      rawSourceCanvas.height = img.height;
+      const ctx = rawSourceCanvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+
+      document.getElementById('dropzoneCard').style.display = 'none';
+      document.getElementById('workspaceLayout').style.display = 'grid';
+
+      eraserHistory = [];
+      processExtraction(false);
+    }
+
+    // Extraction Algorithm
+    function processExtraction(autoTrim = false) {
+      if (!rawSourceCanvas || !outputCanvas) return;
+
+      const w = rawSourceCanvas.width;
+      const h = rawSourceCanvas.height;
+      outputCanvas.width = w;
+      outputCanvas.height = h;
+
+      const srcCtx = rawSourceCanvas.getContext('2d');
+      const imgData = srcCtx.getImageData(0, 0, w, h);
+      const data = imgData.data;
+
+      const threshold = parseInt(document.getElementById('threshSlider').value, 10);
+      const contrast = parseFloat(document.getElementById('contrastSlider').value);
+
+      let tintR = null, tintG = null, tintB = null;
+      if (currentInkColor !== 'original') {
+        const hex = currentInkColor.replace('#', '');
+        tintR = parseInt(hex.substring(0, 2), 16);
+        tintG = parseInt(hex.substring(2, 4), 16);
+        tintB = parseInt(hex.substring(4, 6), 16);
+      }
+
+      for (let i = 0; i < data.length; i += 4) {
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
+
+        // Luma
+        const luma = 0.299 * r + 0.587 * g + 0.114 * b;
+
+        // Detect red stamp
+        const isRedInk = (r > 95 && r > g * 1.25 && r > b * 1.25);
+
+        if (isRedInk) {
+          const diff = 255 - Math.min(g, b);
+          let alpha = Math.min(255, Math.pow(diff / 255, 1 / contrast) * 255 * 1.2);
+          if (luma > threshold && !isRedInk) {
+            alpha = 0;
+          }
+          data[i + 3] = alpha;
+          if (tintR !== null) {
+            data[i] = tintR; data[i + 1] = tintG; data[i + 2] = tintB;
+          }
+        } else {
+          // Dark ink stroke
+          if (luma >= threshold) {
+            data[i + 3] = 0; // White / light paper removed completely
+          } else {
+            const delta = (threshold - luma) / threshold;
+            const alpha = Math.min(255, Math.pow(delta, 1 / contrast) * 255 * 1.35);
+            data[i + 3] = alpha;
+
+            if (tintR !== null) {
+              data[i] = tintR; data[i + 1] = tintG; data[i + 2] = tintB;
+            } else {
+              const darkFactor = Math.max(0.6, 1 - (contrast - 1.0) * 0.4);
+              data[i] = Math.round(r * darkFactor);
+              data[i + 1] = Math.round(g * darkFactor);
+              data[i + 2] = Math.round(b * darkFactor);
+            }
+          }
+        }
+      }
+
+      outputCtx.putImageData(imgData, 0, 0);
+
+      if (autoTrim) {
+        trimCanvas();
+      }
+
+      saveEraserState();
+      updateDim();
+    }
+
+    function trimCanvas() {
+      if (!outputCanvas || !outputCtx) return;
+      const w = outputCanvas.width;
+      const h = outputCanvas.height;
+      const imgData = outputCtx.getImageData(0, 0, w, h);
+      const data = imgData.data;
+
+      let minX = w, minY = h, maxX = 0, maxY = 0;
+      let hasPixels = false;
+
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          const alpha = data[(y * w + x) * 4 + 3];
+          if (alpha > 15) {
+            if (x < minX) minX = x;
+            if (x > maxX) maxX = x;
+            if (y < minY) minY = y;
+            if (y > maxY) maxY = y;
+            hasPixels = true;
+          }
+        }
+      }
+
+      if (!hasPixels) return;
+
+      const pad = 12;
+      minX = Math.max(0, minX - pad);
+      minY = Math.max(0, minY - pad);
+      maxX = Math.min(w - 1, maxX + pad);
+      maxY = Math.min(h - 1, maxY + pad);
+
+      const cropW = maxX - minX + 1;
+      const cropH = maxY - minY + 1;
+
+      const trimmedData = outputCtx.getImageData(minX, minY, cropW, cropH);
+      outputCanvas.width = cropW;
+      outputCanvas.height = cropH;
+      outputCtx.putImageData(trimmedData, 0, 0);
+
+      updateDim();
+      saveEraserState();
+    }
+
+    function rotateImage() {
+      if (!rawSourceCanvas) return;
+      const rotated = document.createElement('canvas');
+      rotated.width = rawSourceCanvas.height;
+      rotated.height = rawSourceCanvas.width;
+      const rCtx = rotated.getContext('2d');
+      rCtx.translate(rotated.width / 2, rotated.height / 2);
+      rCtx.rotate((90 * Math.PI) / 180);
+      rCtx.drawImage(rawSourceCanvas, -rawSourceCanvas.width / 2, -rawSourceCanvas.height / 2);
+      rawSourceCanvas = rotated;
+      processExtraction(false);
+    }
+
+    function onThresholdChange(val) {
+      document.getElementById('threshVal').textContent = val;
+      processExtraction(false);
+    }
+
+    function onContrastChange(val) {
+      document.getElementById('contrastVal').textContent = val;
+      processExtraction(false);
+    }
+
+    function setInkColor(color, btn) {
+      currentInkColor = color;
+      document.querySelectorAll('.color-swatch-grid .color-btn').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+      processExtraction(false);
+    }
+
+    function setBgMode(mode, btn) {
+      const board = document.getElementById('previewBoard');
+      document.querySelectorAll('.bg-modes .bg-mode-btn').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+
+      if (mode === 'checker') {
+        board.style.backgroundColor = '#f8fafc';
+        board.style.backgroundImage = 'linear-gradient(45deg, #e2e8f0 25%, transparent 25%), linear-gradient(-45deg, #e2e8f0 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #e2e8f0 75%), linear-gradient(-45deg, transparent 75%, #e2e8f0 75%)';
+      } else {
+        board.style.backgroundImage = 'none';
+        board.style.backgroundColor = mode;
+      }
+    }
+
+    function updateDim() {
+      if (!outputCanvas) return;
+      document.getElementById('dimBadge').textContent = `${outputCanvas.width} × ${outputCanvas.height} px`;
+    }
+
+    // Eraser Functionality
+    function toggleEraser() {
+      eraserActive = !eraserActive;
+      const btn = document.getElementById('btnEraser');
+      const ring = document.getElementById('eraserRing');
+      if (eraserActive) {
+        btn.classList.add('active');
+        ring.style.display = 'block';
+        ring.style.width = eraserSize + 'px';
+        ring.style.height = eraserSize + 'px';
+      } else {
+        btn.classList.remove('active');
+        ring.style.display = 'none';
+      }
+    }
+
+    function initEraser() {
+      const canvas = document.getElementById('signatureCanvas');
+      const board = document.getElementById('previewBoard');
+      const ring = document.getElementById('eraserRing');
+      let isErasing = false;
+
+      const updateRing = (clientX, clientY) => {
+        if (!eraserActive) return;
+        const rect = board.getBoundingClientRect();
+        ring.style.left = (clientX - rect.left) + 'px';
+        ring.style.top = (clientY - rect.top) + 'px';
+      };
+
+      const erase = (clientX, clientY) => {
+        if (!eraserActive || !outputCtx) return;
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+
+        const cx = (clientX - rect.left) * scaleX;
+        const cy = (clientY - rect.top) * scaleY;
+
+        outputCtx.save();
+        outputCtx.globalCompositeOperation = 'destination-out';
+        outputCtx.beginPath();
+        outputCtx.arc(cx, cy, (eraserSize * scaleX) / 2, 0, Math.PI * 2);
+        outputCtx.fill();
+        outputCtx.restore();
+      };
+
+      board.addEventListener('mousemove', (e) => updateRing(e.clientX, e.clientY));
+      canvas.addEventListener('mousedown', (e) => {
+        if (!eraserActive) return;
+        isErasing = true;
+        erase(e.clientX, e.clientY);
+      });
+      window.addEventListener('mousemove', (e) => {
+        if (isErasing) erase(e.clientX, e.clientY);
+      });
+      window.addEventListener('mouseup', () => {
+        if (isErasing) {
+          isErasing = false;
+          saveEraserState();
+        }
+      });
+    }
+
+    function saveEraserState() {
+      if (!outputCanvas || !outputCtx) return;
+      if (eraserHistory.length > 10) eraserHistory.shift();
+      eraserHistory.push(outputCtx.getImageData(0, 0, outputCanvas.width, outputCanvas.height));
+      document.getElementById('btnUndo').disabled = eraserHistory.length <= 1;
+    }
+
+    function undoEraser() {
+      if (eraserHistory.length <= 1) return;
+      eraserHistory.pop();
+      const prev = eraserHistory[eraserHistory.length - 1];
+      if (prev && outputCtx) {
+        outputCanvas.width = prev.width;
+        outputCanvas.height = prev.height;
+        outputCtx.putImageData(prev, 0, 0);
+        updateDim();
+      }
+      document.getElementById('btnUndo').disabled = eraserHistory.length <= 1;
+    }
+
+    // Export Handlers
+    function downloadPNG() {
+      if (!outputCanvas) return;
+      const link = document.createElement('a');
+      link.download = `signature_transparent_${Date.now()}.png`;
+      link.href = outputCanvas.toDataURL('image/png');
+      link.click();
+    }
+
+    async function copyToClipboard() {
+      if (!outputCanvas) return;
+      try {
+        outputCanvas.toBlob(async (blob) => {
+          if (!blob) return;
+          await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+          alert('✓ Transparent signature copied to clipboard! Ready to paste into Word, Google Docs, or PDF editors.');
+        }, 'image/png');
+      } catch (err) {
+        alert('Clipboard image copying is not supported on this browser. Please use "Download Transparent PNG".');
+      }
+    }
+
+    // Built-in Demo Signatures
+    function loadDemoSignature() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 800;
+      canvas.height = 320;
+      const ctx = canvas.getContext('2d');
+
+      // Realistic warm paper background
+      const grad = ctx.createLinearGradient(0, 0, 800, 320);
+      grad.addColorStop(0, '#fdfdfe');
+      grad.addColorStop(0.5, '#f5f6f9');
+      grad.addColorStop(1, '#e3e8ef');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 800, 320);
+
+      // Subtle paper noise
+      ctx.fillStyle = 'rgba(0,0,0,0.015)';
+      for (let i = 0; i < 300; i++) {
+        ctx.fillRect(Math.random() * 800, Math.random() * 320, 2, 2);
+      }
+
+      ctx.save();
+      ctx.translate(90, 180);
+      ctx.rotate(-0.035);
+
+      ctx.fillStyle = '#0f172a';
+      ctx.strokeStyle = '#0f172a';
+      ctx.font = 'italic 76px "Brush Script MT", "Caveat", "Segoe Script", "Dancing Script", cursive, sans-serif';
+      ctx.fillText('Alexander Sterling', 0, -8);
+
+      // Flourish stroke
+      ctx.lineWidth = 4.2;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(-15, 22);
+      ctx.bezierCurveTo(160, 35, 380, 28, 590, 10);
+      ctx.stroke();
+
+      ctx.lineWidth = 2.4;
+      ctx.beginPath();
+      ctx.moveTo(590, 10);
+      ctx.bezierCurveTo(630, 6, 650, -12, 635, -24);
+      ctx.bezierCurveTo(615, -34, 580, -8, 610, 18);
+      ctx.stroke();
+
+      ctx.font = 'italic 18px "Georgia", serif';
+      ctx.fillStyle = '#334155';
+      ctx.fillText('May 16, 2026', 15, 60);
+      ctx.restore();
+
+      const img = new Image();
+      img.onload = () => setSourceImage(img);
+      img.src = canvas.toDataURL('image/jpeg', 0.94);
+    }
+
+    function loadDemoSeal() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 600;
+      canvas.height = 600;
+      const ctx = canvas.getContext('2d');
+
+      ctx.fillStyle = '#f8fafc';
+      ctx.fillRect(0, 0, 600, 600);
+
+      ctx.save();
+      ctx.translate(300, 300);
+      ctx.rotate(-0.04);
+
+      // Red seal ring
+      ctx.strokeStyle = '#dc2626';
+      ctx.fillStyle = '#dc2626';
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.arc(0, 0, 190, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.arc(0, 0, 175, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.font = 'bold 22px "Arial Black", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('NOTARY PUBLIC', 0, -90);
+      ctx.fillText('★ OFFICIAL SEAL ★', 0, -20);
+      ctx.font = 'bold 18px sans-serif';
+      ctx.fillText('STATE OF NEW YORK', 0, 50);
+      ctx.fillText('COMMISSION EXPIRES 2028', 0, 100);
+
+      ctx.restore();
+
+      const img = new Image();
+      img.onload = () => setSourceImage(img);
+      img.src = canvas.toDataURL('image/jpeg', 0.92);
+    }
+  </script>
+</body>
+</html>
+
